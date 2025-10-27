@@ -22,30 +22,30 @@
         margin: 0;
         font-family: "Montserrat", sans-serif;
         background-color: #f8f9fa;
+        scroll-behavior: smooth;
       }
 
       .header {
         background-color: #2e4940;
         color: white;
         text-align: center;
-        padding: 40px 15px;
+        padding: 20px 15px;
       }
 
-      .header h3 {
+      .header h2 {
         margin: 0;
         font-weight: 700;
-        font-size: 2.2rem;
+        font-size: 2rem;
       }
 
       .pdf-viewer {
         width: 100%;
         height: calc(100vh - 160px);
-        overflow: auto;
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
         background: #f8f9fa;
-        scroll-behavior: smooth;
       }
 
       canvas {
@@ -56,6 +56,7 @@
         border-radius: 10px;
       }
 
+      /* WhatsApp Button */
       .floating-btn {
         position: fixed;
         bottom: 25px;
@@ -79,8 +80,41 @@
         transform: translateY(-2px);
       }
 
+      /* Move Up Button */
+      .back-to-top {
+        position: fixed;
+        bottom: 25px;
+        left: 25px;
+        background-color: #2e4940;
+        color: #fff;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 22px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 1000;
+      }
+
+      .back-to-top.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .back-to-top:hover {
+        background-color: #f4a359;
+        color: #2e4940;
+        transform: translateY(-3px);
+      }
+
       @media (max-width: 768px) {
-        .header h3 {
+        .header h2 {
           font-size: 1.6rem;
         }
         canvas {
@@ -92,13 +126,13 @@
   </head>
 
   <body>
-    <header class="header" style="padding: 20px 0;">
-  <h2>Menu Kesuma</h2>
-</header>
-
+    <header class="header">
+      <h2>MENU KESUMA</h2>
+    </header>
 
     <main class="pdf-viewer" id="pdf-viewer"></main>
 
+    <!-- WhatsApp Button -->
     <a
       href="https://api.whatsapp.com/send?phone=628159358515&text=Haloo+aku+calon+Member+Kesuma+%F0%9F%91%89%F0%9F%91%88"
       target="_blank"
@@ -107,18 +141,21 @@
       <i class="fab fa-whatsapp mr-2"></i> Join Member
     </a>
 
-    <!-- ✅ PDF.js via CDN (v4.x) -->
+    <!-- Move Up Button -->
+    <a href="#" class="back-to-top" id="backToTop">
+      <i class="fa fa-angle-up"></i>
+    </a>
+
+    <!-- ✅ PDF.js via CDN -->
     <script type="module">
       import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs";
 
-      // Set worker dari CDN juga
       pdfjsLib.GlobalWorkerOptions.workerSrc =
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
 
       const url = "static/menu_kesuma_baru.pdf";
       const container = document.getElementById("pdf-viewer");
 
-      // Render PDF
       pdfjsLib.getDocument(url).promise.then((pdf) => {
         for (let i = 1; i <= pdf.numPages; i++) {
           pdf.getPage(i).then((page) => {
@@ -136,6 +173,22 @@
             });
           });
         }
+      });
+
+      // ✅ Fix: scroll listener pada container, bukan window
+      const backToTopBtn = document.getElementById("backToTop");
+
+      container.addEventListener("scroll", () => {
+        if (container.scrollTop > 300) {
+          backToTopBtn.classList.add("show");
+        } else {
+          backToTopBtn.classList.remove("show");
+        }
+      });
+
+      backToTopBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        container.scrollTo({ top: 0, behavior: "smooth" });
       });
     </script>
   </body>
