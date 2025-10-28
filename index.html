@@ -148,48 +148,80 @@
 
     <!-- ✅ PDF.js via CDN -->
     <script type="module">
-      import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs";
+  import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs";
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
 
-      pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
+  const url = "static/menu_kesuma.pdf";
+  const container = document.getElementById("pdf-viewer");
+  const backToTopBtn = document.getElementById("backToTop");
 
-      const url = "static/menu_kesuma.pdf";
-      const container = document.getElementById("pdf-viewer");
+  // ✅ 1. Gunakan progressive streaming
+  const loadingTask = pdfjsLib.getDocument({
+    url,
+    rangeChunkSize: 65536, // 64KB per chunk (streaming)
+  });
 
-      pdfjsLib.getDocument(url).promise.then((pdf) => {
-        for (let i = 1; i <= pdf.numPages; i++) {
-          pdf.getPage(i).then((page) => {
-            const viewport = page.getViewport({ scale: 1.4 });
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+  // ✅ 2. Tampilkan loader dulu
+  const loader = document.createElement("div");
+  loader.innerText = "Loading menu...";
+  loader.style.padding = "40px";
+  loader.style.textAlign = "center";
+  loader.style.fontWeight = "600";
+  loader.style.color = "#2e4940";
+  loader.style.animation = "blink 1.2s infinite";
+  container.appendChild(loader);
 
-            container.appendChild(canvas);
+  // Animasi loading
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes blink {
+      0%,100%{opacity:1;}
+      50%{opacity:0.5;}
+    }`;
+  document.head.appendChild(style);
 
-            page.render({
-              canvasContext: context,
-              viewport: viewport,
-            });
-          });
-        }
-      });
+  loadingTask.promise.then(async (pdf) => {
+    console.log("PDF loaded, total pages:", pdf.numPages);
 
-      // ✅ Fix: scroll listener pada container, bukan window
-      const backToTopBtn = document.getElementById("backToTop");
+    // ✅ 3. Render helper function
+    const renderPage = async (num) => {
+      const page = await pdf.getPage(num);
+      const viewport = page.getViewport({ scale: 1.4 });
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      canvas.style.marginBottom = "20px";
+      container.appendChild(canvas);
+      await page.render({ canvasContext: context, viewport }).promise;
+    };
 
-      container.addEventListener("scroll", () => {
-        if (container.scrollTop > 300) {
-          backToTopBtn.classList.add("show");
-        } else {
-          backToTopBtn.classList.remove("show");
-        }
-      });
+    // 🚀 4. Render halaman pertama langsung
+    await renderPage(1);
+    loader.remove();
 
-      backToTopBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        container.scrollTo({ top: 0, behavior: "smooth" });
-      });
-    </script>
+    // 🕐 5. Render halaman sisanya bertahap (lazy)
+    for (let i = 2; i <= pdf.numPages; i++) {
+      setTimeout(() => renderPage(i), 400 * (i - 1)); // jeda 0.4 detik antar halaman
+    }
+  });
+
+  // ✅ Scroll listener agar tombol muncul dinamis
+  container.addEventListener("scroll", () => {
+    if (container.scrollTop > 300) {
+      backToTopBtn.classList.add("show");
+    } else {
+      backToTopBtn.classList.remove("show");
+    }
+  });
+
+  // ✅ Scroll ke atas container
+  backToTopBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    container.scrollTo({ top: 0, behavior: "smooth" });
+  });
+</script>
+
   </body>
 </html>
